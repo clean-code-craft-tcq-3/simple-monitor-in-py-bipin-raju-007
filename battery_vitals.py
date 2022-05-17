@@ -2,16 +2,26 @@ from common_types import *
 
 
 class BatteryVital:
+    def is_value_breached(self, value, value_ranges: ValueRange, state=ValueState.Normal):
+        if value_ranges.low_breach > value:
+            return ValueState.Low_Breach
+        elif value_ranges.high_breach < value:
+            return ValueState.High_Breach
+        else:
+            return state
+
+    def is_value_near_breach(self, value, value_ranges: ValueRange, state=ValueState.Normal):
+        if value_ranges.low_breach < value <= value_ranges.low_warning:
+            return ValueState.Low_Warning
+        elif value_ranges.high_warning < value <= value_ranges.high_breach:
+            return ValueState.High_Warning
+        else:
+            return state
+
     def get_value_state(self, value, value_ranges: ValueRange):
         value_state = ValueState.Normal
-        if value_ranges.low_breach > value:
-            value_state = ValueState.Low_Breach
-        elif value_ranges.low_breach < value <= value_ranges.low_warning:
-            value_state = ValueState.Low_Warning
-        elif value_ranges.high_warning < value <= value_ranges.high_breach:
-            value_state = ValueState.High_Warning
-        elif value_ranges.high_breach < value:
-            value_state = ValueState.High_Breach
+        value_state = self.is_value_breached(value, value_ranges)
+        value_state = self.is_value_near_breach(value, value_ranges, value_state)
         return value_state
 
 
