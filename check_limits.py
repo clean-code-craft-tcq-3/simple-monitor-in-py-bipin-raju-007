@@ -1,18 +1,61 @@
+from battery_vitals import *
 
-def battery_is_ok(temperature, soc, charge_rate):
-  if temperature < 0 or temperature > 45:
-    print('Temperature is out of range!')
-    return False
-  elif soc < 20 or soc > 80:
-    print('State of Charge is out of range!')
-    return False
-  elif charge_rate > 0.8:
-    print('Charge rate is out of range!')
-    return False
 
-  return True
+def battery_is_ok(battery_validators):
+    for battery_validator in battery_validators:
+        value_state = battery_validator.get_value_state()
+        if value_state != ValueState.Normal:
+            return False, battery_validator, value_state
+    return True, None, ValueState.Normal
 
 
 if __name__ == '__main__':
-  assert(battery_is_ok(25, 70, 0.7) is True)
-  assert(battery_is_ok(50, 85, 0) is False)
+    result, validator, state = battery_is_ok([BatteryTemperature(40)])
+    assert (result is True)
+    assert (validator is None)
+    assert (state == ValueState.Normal)
+
+    result, validator, state = battery_is_ok([BatteryTemperature(100, Unit.Fahrenheit)])
+    assert (result is True)
+    assert (validator is None)
+    assert (state == ValueState.Normal)
+
+    result, validator, state = battery_is_ok([BatteryTemperature(-1)])
+    assert (result is False)
+    assert (type(validator) is BatteryTemperature)
+    assert (state == ValueState.Low_Breach)
+
+    result, validator, state = battery_is_ok([BatteryTemperature(43)])
+    assert (result is False)
+    assert (type(validator) is BatteryTemperature)
+    assert (state == ValueState.High_Warning)
+
+    result, validator, state = battery_is_ok(
+        [BatteryTemperature(25), BatterySOC(70), BatteryChargeRate(0.7)])
+    assert (result is True)
+    assert (validator is None)
+    assert (state == ValueState.Normal)
+
+    result, validator, state = battery_is_ok(
+        [BatteryTemperature(50), BatterySOC(85), BatteryChargeRate(0)])
+    assert (result is False)
+    assert (type(validator) is BatteryTemperature)
+    assert (state == ValueState.High_Breach)
+
+    result, validator, state = battery_is_ok(
+        [BatteryTemperature(40), BatterySOC(85), BatteryChargeRate(0)])
+    assert (result is False)
+    assert (type(validator) is BatterySOC)
+    assert (state == ValueState.High_Breach)
+
+    result, validator, state = battery_is_ok(
+        [BatteryTemperature(40), BatterySOC(45), BatteryChargeRate(0.9)])
+    assert (result is False)
+    assert (type(validator) is BatteryChargeRate)
+    assert (state == ValueState.High_Breach)
+
+    result, validator, state = battery_is_ok(
+        [BatteryTemperature(40), BatterySOC(45), BatteryChargeRate(0.22)])
+    assert (result is False)
+    assert (type(validator) is BatteryChargeRate)
+    assert (state == ValueState.Low_Warning)
